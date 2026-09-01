@@ -20,7 +20,7 @@ required_CRAN_packages <- c("data.table", "lemon", "tidyverse", "extrafont", "sc
                        "colorspace", "ggpubr", "svglite", "magrittr", "png", "remotes","glue", "flextable",
                        "Deriv", "splitstackshape", "gsubfn", "cointReg","RcppArmadillo","Rcpp","zip",
                        "devtools","eurostat","RJSONIO","rdbnomics","rmarkdown","officer","shiny","ggh4x","openxlsx",
-                       "stringr", "sys","ggpp","magick","qs","showtext","knitr","paletteer","countrycode","plotly",
+                       "stringr", "sys","ggpp","magick","qs2","showtext","knitr","paletteer","countrycode","plotly",
                        "crayon","beepr","learnr", "DiagrammeR", "quarto","gt","downloadthis","PrettyCols",
                        "fst", "microbenchmark", "tictoc","dtplyr")
 
