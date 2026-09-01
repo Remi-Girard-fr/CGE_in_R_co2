@@ -2,3 +2,14 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# Fichiers regeneres a chaque simulation
+data/temp/
+data/output/*.rds
+results/quarto_render/*.html
+basic_results_temp_files/
+*_basic_results_*.html
+
+# Rendus Quarto locaux de l'analyse (la version publiee vit dans docs/)
+analysis/ThreeME_mini_analyse.html
+analysis/ThreeME_mini_analyse_files/
