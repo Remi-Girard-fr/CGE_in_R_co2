@@ -1,0 +1,273 @@
+---
+title: "Une taxe carbone dans une maquette ThreeME"
+subtitle: "Que se passe-t-il quand on taxe le CO2 et qu'on reverse la moitié de la recette aux ménages ? Simulation avec la version pédagogique du modèle ThreeME (OFCE/Ademe), celui qui sert aux projections du plan climat luxembourgeois"
+author: "Rémi Girard"
+date: today
+lang: fr
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-title: "Sommaire"
+    code-tools: true
+    fig-width: 8
+    fig-height: 4.2
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+
+# Résultats produits par Main.R (project_name = "france_co2"), copie dans analysis/
+res_path <- if (file.exists("france_co2.rds")) "france_co2.rds" else
+  file.path("..", "data", "output", "france_co2.rds")
+res <- readRDS(res_path)
+
+# Écarts à la baseline
+dev_pct <- function(data, vars, scen) {
+  data |>
+    filter(variable %in% vars, scenario == scen) |>
+    mutate(dev = 100 * (values / values_ref - 1))
+}
+
+# Palette (2 séries, ordre fixe : bleu, orange ; aqua en 3e si besoin)
+pal <- c("co2" = "#2a78d6", "g" = "#eb6834", "extra" = "#1baf7a")
+lab_scen <- c("co2" = "Taxe carbone (1 % du PIB)",
+              "g"   = "Dépenses publiques (+1 % du PIB)")
+
+theme_mini <- theme_minimal(base_size = 12) +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        plot.title = element_text(face = "bold"),
+        plot.title.position = "plot",
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.text = element_text(face = "bold"))
+
+zero_line <- geom_hline(yintercept = 0, colour = "grey55", linewidth = 0.3)
+```
+
+::: {.callout-note title="L'essentiel en trois points"}
+1. Une taxe carbone dont la moitié de la recette est reversée aux ménages freine l'économie pendant quelques années (PIB -0,7 % au plus bas), puis l'écart se referme presque entièrement : -0,13 % seulement en 2050, avec des ménages gagnants dès 2030.
+2. Le seul effet qui ne disparaît pas est la perte de compétitivité : sans mécanisme équivalent chez les partenaires commerciaux, les exportations restent environ 1 % sous leur niveau de référence.
+3. L'exercice est réalisé avec la version pédagogique open source de ThreeME, le modèle utilisé par le STATEC pour les projections du plan climat luxembourgeois. Tout le code est public et reproductible.
+:::
+
+## 1. Contexte et objectif
+
+Chaque pays de l'Union européenne doit produire un plan national énergie-climat (PNEC) et chiffrer son impact sur l'économie du pays. Au Luxembourg, ce chiffrage est réalisé par le STATEC, l'institut national de la statistique, à l'aide de plusieurs modèles complémentaires : Modux pour les prévisions à quelques années, NEAM pour l'énergie, et ThreeME pour les projections économiques jusqu'en 2050 (PNEC 2024, p. 358 ; STATEC, 2024). ThreeME, développé par l'OFCE et l'Ademe en France, est un modèle qui simule l'économie entière, la production, les prix, les salaires, l'emploi, le commerce extérieur, et c'est le seul de la suite capable d'évaluer une mesure fiscale comme la taxe CO2. L'évaluation officielle du plan luxembourgeois conclut que sa mise en œuvre rehausserait le PIB d'environ 1 % et l'emploi de 1,4 % en 2030 par rapport à un scénario sans mesures nouvelles.
+
+La taxe CO2 y occupe une place centrale. Elle vaut 35 euros par tonne en 2024, atteindra 45 euros en 2026, et les projections de long terme supposent une montée jusqu'à 165 euros en 2050. Sa trajectoire doit être réévaluée en 2026, juste avant l'entrée en vigueur du second marché carbone européen (ETS-2), qui étendra le prix du carbone au chauffage et aux carburants.
+
+Ce document propose un exercice volontairement modeste : simuler une taxe carbone dans la version pédagogique open source de ThreeME ([ThreeME-org/CGE_in_R](https://github.com/ThreeME-org/CGE_in_R)), qui se résout entièrement dans le logiciel libre R. L'objectif n'est pas de produire une prévision, mais de montrer, de bout en bout, comment fonctionne ce type de modélisation : écrire des équations, calibrer une économie de référence, simuler un choc, lire les résultats.
+
+## 2. Le modèle et l'extension carbone
+
+### 2.1 La maquette
+
+Le modèle utilisé est une économie virtuelle décrite par une quarantaine d'équations, qui reprend les traits distinctifs de ThreeME. Les entreprises produisent en combinant machines et travail, et fixent leurs prix en ajoutant une marge à leurs coûts. Les salaires résultent d'une négociation qui dépend du chômage : quand le chômage monte, les salaires progressent moins vite. Le pays échange avec l'étranger, et les acheteurs se tournent vers les produits devenus relativement moins chers, qu'ils soient locaux ou importés.
+
+Le trait le plus important est la lenteur des ajustements. Dans ce modèle, personne ne réagit instantanément : les entreprises mettent plusieurs années à répercuter une hausse de coûts dans leurs prix, les salaires suivent l'inflation avec retard, la consommation s'adapte progressivement. Chaque variable a une valeur cible (celle que l'agent choisirait idéalement) et une valeur effective qui s'en rapproche petit à petit. C'est cette inertie, très proche de ce qu'on observe dans les économies réelles, qui fait tout l'intérêt des trajectoires simulées : on voit le choc se propager année après année, pas seulement son effet final.
+
+### 2.2 L'économie de référence
+
+Avant de simuler un choc, il faut une économie de départ. Ici, elle n'est construite sur aucune donnée réelle : c'est une économie fictive, aux valeurs volontairement rondes, choisie pour que toutes les équations du modèle soient exactement vérifiées l'année de base (2019) et pour croître ensuite à un rythme parfaitement régulier. Concrètement, le PIB vaut 100 en 2019 et croît de 1,505 % par an, très exactement : ce chiffre n'est pas une prévision mais le produit des deux moteurs de croissance du modèle, les gains de productivité (1 % par an) et la croissance de la population active (0,5 % par an). L'inflation est fixée à 2 % par an. Ce sentier régulier s'appelle la référence (ou baseline) : c'est la trajectoire que suivrait l'économie s'il ne se passait rien de nouveau.
+
+Les principales caractéristiques de cette économie de référence :
+
+| Grandeur | Valeur | Commentaire |
+|---|---|---|
+| Croissance du PIB | 1,505 % par an | productivité 1 % x population 0,5 %, constant sur toute la période |
+| Inflation | 2 % par an | soit environ 3,5 % de croissance en euros courants |
+| Taux de chômage | 9,1 % | 1 000 emplois pour 1 100 actifs |
+| Investissement | 17 % du PIB | |
+| Dépenses publiques | 23 % du PIB | |
+| Consommation des ménages | 61 % du PIB | |
+| Exportations | 20 % du PIB | importations 21 % |
+| Part des salaires | 65 % de la valeur ajoutée | |
+| Dette publique | 60 % du PIB | |
+
+Ces valeurs ressemblent à une économie européenne moyenne, mais ne décrivent aucun pays réel. Les résultats ne se lisent donc jamais en niveau (« le PIB vaudra tant en 2035 ») mais toujours en écart : de combien la trajectoire avec taxe s'éloigne-t-elle de la trajectoire de référence ? C'est exactement ainsi que le PNEC présente ses propres résultats, en comparant le scénario avec mesures additionnelles au scénario sans. Et c'est ce qui rend l'exercice transposable : donner à cette économie fictive les ratios du Luxembourg (dont des exportations dix fois plus importantes en proportion du PIB) serait la première étape d'une application nationale.
+
+### 2.3 L'extension : La taxe carbone
+
+La maquette d'origine ne contient ni énergie ni émissions. J'y ai donc ajouté un petit bloc carbone (fichiers `05.1-eq_co2_open.mdl` et `05.1-calib_co2_add.mdl`), en trois équations :
+
+$$EMS = \phi_{EMS} \cdot Y \qquad REV_{CO2} = t_{CO2} \cdot EMS \qquad TR_{CO2} = \phi_{TR} \cdot REV_{CO2}$$
+
+En clair : les émissions de CO2 ($EMS$) sont proportionnelles à la production ($Y$, le PIB), avec une intensité d'émission fixe ($\phi_{EMS}$, calibrée à 0,25 : chaque unité produite émet un quart d'unité de CO2). La recette de la taxe ($REV_{CO2}$) est le produit du taux de taxe ($t_{CO2}$, en euros par unité d'émission, nul dans la référence) et des émissions. Enfin, une part $\phi_{TR}$ de cette recette est reversée aux ménages sous forme d'un transfert ($TR_{CO2}$). Cette part est fixée à 50 %, ce qui n'a rien d'arbitraire : c'est la règle réellement appliquée au Luxembourg, où la moitié des recettes de la taxe CO2 finance le crédit d'impôt CO2 et l'allocation de vie chère (PNEC p. 110). L'hypothèse d'une intensité d'émission fixe est la simplification assumée de l'exercice : dans ce petit modèle, on ne peut pas réduire ses émissions autrement qu'en produisant moins (la section 5 y revient).
+
+Quatre équations existantes sont ensuite modifiées pour brancher ce bloc sur le circuit économique :
+
+$$p^n_y \, Y = c_Y \, Y \, (1+m) + t_{CO2} \cdot EMS$$
+$$PROF = p \, Y - w \, L - c_K \, K - t_{CO2} \cdot EMS$$
+$$INC = w \, L + DIV + TR_{CO2}$$
+$$SAV_G = t_{inc} \cdot INC + REV_{CO2} - TR_{CO2} - p \, G - \text{charges de la dette}$$
+
+La première dit que la taxe entre dans le prix que les entreprises cherchent à pratiquer : $p^n_y$ est ce prix cible, $c_Y$ le coût de production d'une unité (salaires et machines) et $m$ la marge. Comme les prix s'ajustent lentement, la répercussion prend plusieurs années. La deuxième dit qui paie en attendant : tant que la hausse de prix n'a pas tout répercuté, la taxe ampute les profits ($PROF$), calculés comme les ventes ($p \, Y$) moins les salaires ($w \, L$, salaire fois emploi) moins le coût du capital ($c_K \, K$). La troisième crédite les ménages : leur revenu ($INC$) est la somme des salaires, des dividendes ($DIV$) et, désormais, du transfert de compensation. La quatrième boucle le budget de l'État : son solde ($SAV_G$) encaisse l'impôt sur le revenu (au taux $t_{inc}$) et la recette carbone, débourse le transfert et les dépenses publiques ($G$), la moitié non recyclée de la taxe améliorant donc les comptes publics.
+
+Comme la taxe est nulle dans la référence, toutes ces équations s'y réduisent à leur version d'origine : l'économie de départ est rigoureusement inchangée, seule la trajectoire avec taxe s'en écarte.
+
+Le scénario simulé introduit la taxe en 2021, à un niveau calculé pour que sa recette représente 1 % du PIB, le format du scénario standard publié par l'équipe ThreeME, ce qui permet la comparaison. Un second scénario, une hausse permanente des dépenses publiques du même montant (1 % du PIB), sert de point de repère : même effort budgétaire, instrument différent.
+
+## 3. Résultats
+
+```{r data-prep}
+years_keep <- 2019:2050
+
+d_co2 <- dev_pct(res, c("Y", "L", "CH", "I", "X", "M", "PY", "W", "PROF"), "co2") |>
+  filter(year %in% years_keep)
+d_g   <- dev_pct(res, c("Y", "L", "CH"), "g") |> filter(year %in% years_keep)
+```
+
+### 3.1 Activité et emploi : un creux temporaire qui se referme
+
+```{r fig-pib-emploi}
+#| fig-cap: "Écart à la référence, en %. Sources : simulations de l'auteur, maquette CGE_in_R (ThreeME-org), solveur tresthor."
+bind_rows(
+  d_co2 |> filter(variable %in% c("Y", "L")) |> mutate(scenario = "co2"),
+  d_g   |> filter(variable %in% c("Y", "L")) |> mutate(scenario = "g")
+) |>
+  mutate(variable = recode(as.character(variable), Y = "PIB", L = "Emploi")) |>
+  ggplot(aes(year, dev, colour = scenario)) +
+  zero_line +
+  geom_line(linewidth = 0.9) +
+  facet_wrap(~variable) +
+  scale_colour_manual(values = pal, breaks = c("co2", "g"), labels = lab_scen) +
+  labs(title = "PIB et emploi : deux instruments, deux profils temporels",
+       x = NULL, y = "écart à la référence, %") +
+  theme_mini
+```
+
+La taxe freine d'abord l'économie : le PIB descend jusqu'à 0,7 % sous sa trajectoire de référence en 2025, l'emploi aussi. Puis l'écart se referme progressivement, jusqu'à -0,13 % seulement en 2050. Le mécanisme se lit dans l'ordre : la taxe renchérit la production, mais les entreprises ne peuvent pas augmenter leurs prix du jour au lendemain, ce sont donc d'abord leurs profits qui encaissent (-3,2 % la première année), ce qui déprime l'investissement. Puis, à mesure que prix et salaires s'ajustent et que le transfert soutient le pouvoir d'achat, l'économie remonte vers un sentier à peine inférieur à la référence.
+
+La comparaison avec la hausse de dépenses publiques est parlante : celle-ci dope l'activité immédiatement (chaque euro dépensé génère environ un euro de PIB la première année), mais l'effet s'évapore dès 2030, mangé par la hausse des prix et la perte de compétitivité, et la consommation privée finit durablement 1 % sous sa référence. Les deux instruments ont des profils temporels inversés : la dépense publique donne tout de suite et reprend ensuite, la taxe coûte d'abord et devient quasi neutre, avec des ménages gagnants à long terme.
+
+### 3.2 Qui paie la taxe au fil du temps
+
+```{r fig-prix}
+#| fig-cap: "Écart à la référence, en %. La taxe se répercute progressivement des profits vers les prix."
+d_co2 |>
+  filter(variable %in% c("PY", "W", "PROF")) |>
+  mutate(variable = recode(as.character(variable), PY = "Prix de production",
+                           W = "Salaire nominal", PROF = "Profits")) |>
+  ggplot(aes(year, dev, colour = variable)) +
+  zero_line +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c("Prix de production" = "#2a78d6",
+                                 "Salaire nominal" = "#eb6834",
+                                 "Profits" = "#1baf7a")) +
+  labs(title = "Prix, salaires, profits : une répercussion graduelle",
+       x = NULL, y = "écart à la référence, %") +
+  theme_mini
+```
+
+Les prix de production montent de 1,2 % en 2025 à 1,9 % en 2050, et les salaires suivent avec retard. Le fardeau de la taxe se déplace donc au fil du temps : d'abord porté par les profits des entreprises, il glisse vers les prix payés par les consommateurs, avant de se partager à long terme entre tous, une fois les salaires réajustés.
+
+### 3.3 Compétitivité : le seul effet qui ne disparaît pas
+
+```{r fig-commerce}
+#| fig-cap: "Écart à la référence, en %. Une taxe appliquée seul, sans équivalent chez les partenaires, dégrade durablement la compétitivité."
+d_co2 |>
+  filter(variable %in% c("X", "M")) |>
+  mutate(variable = recode(as.character(variable), X = "Exportations", M = "Importations")) |>
+  ggplot(aes(year, dev, colour = variable)) +
+  zero_line +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c("Exportations" = "#2a78d6", "Importations" = "#eb6834")) +
+  labs(title = "Commerce extérieur : la perte de compétitivité ne se referme pas",
+       x = NULL, y = "écart à la référence, %") +
+  theme_mini
+```
+
+Contrairement au PIB, l'écart de commerce extérieur ne se referme pas : les exportations restent environ 1 % sous leur référence en 2050, et les importations 1,4 % au-dessus. La raison est simple : la taxe rend la production nationale plus chère que celle des partenaires qui ne l'appliquent pas, et les acheteurs, ici comme à l'étranger, se tournent vers les produits devenus relativement moins chers. C'est l'argument économique derrière les mécanismes d'ajustement carbone aux frontières, et un enjeu de premier ordre pour une petite économie très ouverte.
+
+### 3.4 Ménages et finances publiques
+
+```{r fig-menages-fipu}
+#| fig-cap: "Gauche : solde public et recette carbone (écarts en points de PIB de référence). Droite : consommation des ménages (écart en %)."
+fipu <- res |>
+  filter(variable %in% c("SAV_G", "REV_CO2"), scenario == "co2") |>
+  select(variable, year, values, values_ref) |>
+  left_join(res |> filter(variable == "Y", scenario == "co2") |>
+              transmute(year, y_ref = values_ref), by = "year") |>
+  left_join(res |> filter(variable == "P", scenario == "co2") |>
+              transmute(year, p_ref = values_ref), by = "year") |>
+  mutate(dev = 100 * (values - values_ref) / (p_ref * y_ref),
+         variable = recode(variable, SAV_G = "Solde public",
+                           REV_CO2 = "Recette carbone"),
+         panel = "Finances publiques (pts de PIB)") |>
+  filter(year %in% years_keep)
+
+menages <- d_co2 |>
+  filter(variable == "CH") |>
+  mutate(variable = "Consommation des ménages",
+         panel = "Ménages (écart %)")
+
+bind_rows(menages |> select(panel, variable, year, dev),
+          fipu    |> select(panel, variable, year, dev)) |>
+  ggplot(aes(year, dev, colour = variable)) +
+  zero_line +
+  geom_line(linewidth = 0.9) +
+  facet_wrap(~panel, scales = "free_y") +
+  scale_colour_manual(values = c("Consommation des ménages" = "#2a78d6",
+                                 "Recette carbone" = "#eb6834",
+                                 "Solde public" = "#1baf7a")) +
+  labs(title = "Les revenus de la taxe soutiennent les ménages, la moitié non recyclée désendette l'État",
+       x = NULL, y = NULL) +
+  theme_mini
+```
+
+La consommation des ménages baisse d'abord (-0,6 % en 2025), puis repasse au-dessus de sa référence dès 2030 et atteint +0,5 % en 2050 : le transfert et la progression des salaires finissent par faire plus que compenser la hausse des prix. Côté finances publiques, la recette vaut 1 % du PIB la première année puis s'érode vers 0,55 % en 2050, car le taux de taxe est fixé en euros courants pendant que les prix montent : la base taxable fond en termes réels, un phénomène également documenté dans l'évaluation française de la stratégie bas-carbone. La moitié non reversée aux ménages améliore le solde public et réduit la dette de 14 points de PIB à l'horizon 2050.
+
+### 3.5 Synthèse chiffrée
+
+```{r tab-synthese}
+vars_tab <- c("Y", "L", "CH", "I", "X", "PY", "EMS")
+noms <- c(Y = "PIB", L = "Emploi", CH = "Consommation", I = "Investissement",
+          X = "Exportations", PY = "Prix de production", EMS = "Émissions")
+
+dev_pct(res, vars_tab, "co2") |>
+  filter(year %in% c(2025, 2030, 2040, 2050)) |>
+  transmute(Variable = noms[as.character(variable)], year, dev = round(dev, 2)) |>
+  pivot_wider(names_from = year, values_from = dev) |>
+  knitr::kable(caption = "Scénario taxe carbone : écarts à la référence, en %")
+```
+
+## 4. Et au Luxembourg ?
+
+Transposer cet exercice au cas luxembourgeois, ce que fait le vrai ThreeME du STATEC, exigerait de traiter trois spécificités que la maquette ne contient pas, et qui changeraient nettement les résultats.
+
+Les ventes de carburants aux non-résidents. La majorité des émissions attribuées au Luxembourg ne vient pas des Luxembourgeois : environ deux tiers des ventes de carburants se font à des routiers internationaux ou à des personnes en transit, attirés par des prix à la pompe plus faibles que chez les voisins (PNEC p. 442). Cette clientèle est très sensible à l'écart de prix : le PNEC estime que 5 euros de taxe en plus par tonne renchérissent le litre d'environ 1,1 à 1,2 centime (p. 110). Une hausse de taxe réduit donc fortement les émissions comptabilisées au Luxembourg, mais par déplacement des ventes vers les pays voisins plus que par vraie décarbonation, tout en rognant une recette fiscale importante. Ce canal, absent de tout modèle standard, est le premier bloc spécifique qu'un ThreeME luxembourgeois doit contenir.
+
+Les frontaliers. Près de la moitié des emplois du pays sont occupés par des frontaliers (273 000 attendus en 2030). Le marché du travail y fonctionne donc autrement : quand l'activité accélère, ce sont surtout les flux de travailleurs frontaliers qui s'ajustent, plus que les salaires. L'équation de salaire du modèle doit être adaptée en conséquence.
+
+Le degré d'ouverture. Notre économie fictive exporte 20 % de son PIB ; le Luxembourg en exporte plus de 200 %. Les effets identifiés ici, perte de compétitivité durable et fuite d'une partie de la relance vers les importations, y seraient démultipliés, ce que confirme l'évaluation du PNEC.
+
+## 5. Limites et prolongements
+
+Trois limites, assumées, dessinent les prolongements naturels de l'exercice.
+
+D'abord, l'absence de substitution énergétique : dans notre petit modèle, les émissions sont proportionnelles au PIB, on ne peut donc les réduire qu'en produisant moins (-0,1 % en 2050, autant dire rien). Le ThreeME complet raconte l'inverse : parce qu'il permet de remplacer l'énergie fossile par des équipements (isolation, pompes à chaleur, véhicules électriques), la taxe y déclenche des investissements qui réduisent fortement les émissions tout en soutenant l'activité, l'évaluation de la stratégie française conclut même à un PIB supérieur de 2,5 % en 2030 (Callonnec & Cancé, 2022). Notre exercice isole donc les canaux prix, compétitivité et transfert de la taxe, qui restent à l'œuvre dans le modèle complet.
+
+Ensuite, le ménage unique : la maquette ne dit rien des inégalités, alors que c'est le cœur du débat sur la taxe carbone, qui pèse proportionnellement plus sur les budgets modestes. Le PNEC documente lui-même cette limite pour le ThreeME du STATEC (le modèle ne distingue pas les ménages par niveau de revenu, note 70, p. 430) : l'analyse distributive y est menée à part, sur données d'enquête. Distinguer plusieurs catégories de ménages dans le modèle serait un apport direct à la prochaine mise à jour.
+
+Enfin, l'économie fictive : donner au modèle les vrais ratios d'un pays, à commencer par ceux du Luxembourg, est l'étape suivante immédiate, avant, à terme, une calibration complète sur les comptes nationaux et le bilan énergétique du STATEC.
+
+Le calendrier donne son sens à l'exercice : la trajectoire de la taxe CO2 luxembourgeoise doit être réévaluée en 2026, le second marché carbone européen arrive en 2027, et le projet du prochain PNEC est attendu pour début 2028. C'est précisément le type de simulations que le modèle devra alors produire.
+
+## Code et reproductibilité
+
+L'ensemble du code permettant de reproduire ces simulations est disponible dans un fork public du dépôt de l'équipe ThreeME : [github.com/Remi-Girard-fr/CGE_in_R](https://github.com/Remi-Girard-fr/CGE_in_R). Le README y détaille les apports par rapport au dépôt d'origine (bloc carbone, calibration, scénario de choc, configuration) et la procédure complète : cloner le dépôt, installer les packages R, lancer Main.R, puis rendre ce document. Les résultats de simulation utilisés ici sont fournis dans le dépôt, si bien que le rapport peut être régénéré sans relancer le modèle.
+
+## Références
+
+- Gouvernement du Grand-Duché de Luxembourg (2024), Plan national intégré en matière d'énergie et de climat du Luxembourg pour la période 2021-2030, mise à jour, juillet 2024 (notamment section 5.2 et p. 358 pour l'architecture de modélisation).
+- STATEC (2024), Modèles utilisés et scénarios simulés pour le PNEC, note du département Conjoncture, Modélisations et Prévisions, juillet 2024.
+- Callonnec G., Cancé R. (2022), Évaluation macroéconomique de la Stratégie nationale bas-carbone (SNBC 2) avec le modèle ThreeME, Document de travail Ademe-CGDD, février 2022.
+- Callonnec G., Landa G., Malliet P., Reynès F., Yeddir-Tamsamani Y. (2013), A full description of the ThreeME model, Ademe-OFCE.
+- Malliet P., Reynès F., Landa G., Hamdi-Cherif M., Saussay A. (2020), « Assessing Short-Term and Long-Term Economic and Environmental Effects of the COVID-19 Crisis in France », Environmental and Resource Economics, 76, 867-883.
+- Dépôts : [ThreeME-org/CGE_in_R](https://github.com/ThreeME-org/CGE_in_R), [ThreeME-org/ThreeME_V3-open](https://github.com/ThreeME-org/ThreeME_V3-open), [OFCE/tresthor](https://github.com/OFCE/tresthor).
