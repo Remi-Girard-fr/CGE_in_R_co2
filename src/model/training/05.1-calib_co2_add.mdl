@@ -1,0 +1,18 @@
+# Calibration add-on for the carbon tax block
+# To be loaded AFTER 03.1-calib_exception_open.mdl
+
+# Emission intensity of production (stylised, constant)
+phi_EMS := 0.25
+
+# Carbon tax rate (zero in the baseline: the steady state is unchanged)
+t_co2 := 0
+
+# Share of carbon tax revenue recycled to households (Luxembourg rule: 50%)
+Phi_TR_CO2 := 0.5
+
+# CO2 emissions
+EMS := phi_EMS * Y
+
+# Carbon tax revenue and compensation transfer (zero at baseline)
+REV_CO2 := t_co2 * EMS
+TR_CO2 := Phi_TR_CO2 * REV_CO2

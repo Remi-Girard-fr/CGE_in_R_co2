@@ -11,12 +11,13 @@
 iso3 = "FRA"                   
 classification = "c2_s2" 
 model_folder = "training"
-project_name = "test"
+project_name = "france_co2"
 
 
 scenario_baseline = "baseline-steady" # Maybe modified if the baseline needs to integrate some user-specified trajectories of exogenous variables.  All scenarii files are  located in configuration/scenarii_calib
-scenario = c("g") |> 
-  set_names(c("Increase government spending of 1% of GDP"))
+scenario = c("g","co2") |> 
+  set_names(c("Increase government spending of 1% of GDP",
+              "Carbon tax of 1% of GDP, 50% recycled to households"))
 ## Input the base year used for the calibration
 baseyear = 2019
 ## Set the end of the sample
@@ -48,7 +49,8 @@ lists_files = c(
 
 calib_files <- c(lists_files,
                  
-                "01.1-calib.mdl",     
+                "03.1-calib_exception_open.mdl",
+                "05.1-calib_co2_add.mdl",     
                 
                  "ENDOFLINE.mdl"       # ALL VERSIONS: empty file
                  
@@ -56,7 +58,7 @@ calib_files <- c(lists_files,
 
 # Model files 
 model_files = c(lists_files,
-                "01.1-eq_one_eq.mdl",     
+                "05.1-eq_co2_open.mdl",     
                 
                 
                 "ENDOFLINE.mdl"        # ALL VERSIONS: empty file
@@ -89,7 +91,7 @@ eviews_timeout = 0       # Define the maximum number of second R waits for the E
 rcpp_option = FALSE 
 
 ### If superlu is installed, switch to TRUE, otherwise FALSE
-use.superlu = TRUE 
+use.superlu = FALSE 
 ### Specify here if there is special configuration necessary to  use superlu
 if(use.superlu == TRUE){ 
   Sys.setenv("CPATH"="/opt/homebrew/include")

@@ -12,10 +12,10 @@ source(file.path("src","setup.R"))
 ## 1. OPTIONAL Prepare the baseline and/or shock calibration file, uncomment the lines
 
 ## >>>>>>> uncomment start
-# calibration_bubble <- calibration_environment(baseline_calibration = FALSE)
-# list2env(calibration_bubble, envir = globalenv())
-# ### You may now open the relevant scenario config file to edit and test it
-# rm(list = names(calibration_bubble))
+ #calibration_bubble <- calibration_environment(baseline_calibration = FALSE)
+ #list2env(calibration_bubble, envir = globalenv())
+ ### You may now open the relevant scenario config file to edit and test it
+ #rm(list = names(calibration_bubble))
 ## <<<<<<< uncomment end
 
 ## 2. Running simulations
