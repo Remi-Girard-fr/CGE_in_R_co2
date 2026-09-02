@@ -41,4 +41,4 @@ Une taxe carbone de 1 % du PIB, recyclée à 50 % vers les ménages, creuse l'ac
 - STATEC (2024), Modèles utilisés et scénarios simulés pour le PNEC, note du département Conjoncture, Modélisations et Prévisions, juillet 2024.
 - Callonnec G., Cancé R. (2022), Évaluation macroéconomique de la SNBC 2 avec le modèle ThreeME, Ademe-CGDD.
 
-Auteur du fork et de l'analyse : Rémi Girard. Présentation et contexte : [lien vers la page du site à ajouter].
+Auteur du fork et de l'analyse : Rémi Girard. 
