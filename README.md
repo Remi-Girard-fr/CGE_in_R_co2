@@ -1,10 +1,10 @@
-# CGE_in_R, fork : une taxe carbone recyclée dans une maquette ThreeME
+# CGE_in_R_co2 : une taxe carbone recyclée dans une maquette ThreeME (fork)
 
 Ce dépôt est un fork de [ThreeME-org/CGE_in_R](https://github.com/ThreeME-org/CGE_in_R), la version pédagogique open source du modèle macroéconomique multisectoriel [ThreeME](https://www.threeme.org/) (OFCE / Ademe), résolue entièrement en R avec le solveur [tresthor](https://github.com/OFCE/tresthor) de l'OFCE. Tout le cœur du dépôt (compilateur, fonctions, modèles de formation) est le travail de l'équipe ThreeME.
 
 Ce fork ajoute une extension et une analyse : la simulation d'une taxe carbone recyclée dans le modèle néo-keynésien en économie ouverte de la maquette, en écho à la modélisation utilisée par le STATEC pour le PNEC luxembourgeois (le modèle ThreeME y est couplé à Modux et NEAM pour les projections à l'horizon 2050 et l'évaluation de la taxe CO2).
 
-Le rapport complet est consultable ici : https://remi-girard-fr.github.io/CGE_in_R/
+Le rapport complet est consultable ici : https://remi-girard-fr.github.io/CGE_in_R_co2/
 
 ## Apports de ce fork par rapport au dépôt d'origine
 

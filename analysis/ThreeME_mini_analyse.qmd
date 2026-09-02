@@ -1,6 +1,6 @@
 ---
 title: "Une taxe carbone dans une maquette ThreeME"
-subtitle: "Que se passe-t-il quand on taxe le CO2 et qu'on reverse la moitié de la recette aux ménages ? Simulation avec la version pédagogique du modèle ThreeME (OFCE/Ademe), celui qui sert aux projections du plan climat luxembourgeois"
+subtitle: "Que se passe-t-il quand on taxe le CO2 et qu'on reverse la moitié de la recette aux ménages ? Simulation avec la version pédagogique du modèle ThreeME (OFCE/Ademe)"
 author: "Rémi Girard"
 date: today
 lang: fr
@@ -58,7 +58,7 @@ zero_line <- geom_hline(yintercept = 0, colour = "grey55", linewidth = 0.3)
 
 ## 1. Contexte et objectif
 
-Chaque pays de l'Union européenne doit produire un plan national énergie-climat (PNEC) et chiffrer son impact sur l'économie du pays. Au Luxembourg, ce chiffrage est réalisé par le STATEC, l'institut national de la statistique, à l'aide de plusieurs modèles complémentaires : Modux pour les prévisions à quelques années, NEAM pour l'énergie, et ThreeME pour les projections économiques jusqu'en 2050 (PNEC 2024, p. 358 ; STATEC, 2024). ThreeME, développé par l'OFCE et l'Ademe en France, est un modèle qui simule l'économie entière, la production, les prix, les salaires, l'emploi, le commerce extérieur, et c'est le seul de la suite capable d'évaluer une mesure fiscale comme la taxe CO2. L'évaluation officielle du plan luxembourgeois conclut que sa mise en œuvre rehausserait le PIB d'environ 1 % et l'emploi de 1,4 % en 2030 par rapport à un scénario sans mesures nouvelles.
+Chaque pays de l'Union européenne doit produire un plan national énergie-climat (PNEC) et chiffrer ce que ce plan ferait à son économie. Au Luxembourg, ce chiffrage est réalisé par le STATEC, l'institut national de la statistique, à l'aide de plusieurs modèles complémentaires : Modux pour les prévisions à quelques années, NEAM pour l'énergie, et ThreeME pour les projections économiques jusqu'en 2050 (PNEC 2024, p. 358 ; STATEC, 2024). ThreeME, développé par l'OFCE et l'Ademe en France, est un modèle qui simule l'économie entière, la production, les prix, les salaires, l'emploi, le commerce extérieur, et c'est le seul de la suite capable d'évaluer une mesure fiscale comme la taxe CO2. L'évaluation officielle du plan luxembourgeois conclut que sa mise en œuvre rehausserait le PIB d'environ 1 % et l'emploi de 1,4 % en 2030 par rapport à un scénario sans mesures nouvelles.
 
 La taxe CO2 y occupe une place centrale. Elle vaut 35 euros par tonne en 2024, atteindra 45 euros en 2026, et les projections de long terme supposent une montée jusqu'à 165 euros en 2050. Sa trajectoire doit être réévaluée en 2026, juste avant l'entrée en vigueur du second marché carbone européen (ETS-2), qui étendra le prix du carbone au chauffage et aux carburants.
 
@@ -92,7 +92,7 @@ Les principales caractéristiques de cette économie de référence :
 
 Ces valeurs ressemblent à une économie européenne moyenne, mais ne décrivent aucun pays réel. Les résultats ne se lisent donc jamais en niveau (« le PIB vaudra tant en 2035 ») mais toujours en écart : de combien la trajectoire avec taxe s'éloigne-t-elle de la trajectoire de référence ? C'est exactement ainsi que le PNEC présente ses propres résultats, en comparant le scénario avec mesures additionnelles au scénario sans. Et c'est ce qui rend l'exercice transposable : donner à cette économie fictive les ratios du Luxembourg (dont des exportations dix fois plus importantes en proportion du PIB) serait la première étape d'une application nationale.
 
-### 2.3 L'extension : La taxe carbone
+### 2.3 L'extension : taxe carbone
 
 La maquette d'origine ne contient ni énergie ni émissions. J'y ai donc ajouté un petit bloc carbone (fichiers `05.1-eq_co2_open.mdl` et `05.1-calib_co2_add.mdl`), en trois équations :
 
@@ -251,7 +251,7 @@ Le degré d'ouverture. Notre économie fictive exporte 20 % de son PIB ; le Luxe
 
 Trois limites, assumées, dessinent les prolongements naturels de l'exercice.
 
-D'abord, l'absence de substitution énergétique : dans notre petit modèle, les émissions sont proportionnelles au PIB, on ne peut donc les réduire qu'en produisant moins (-0,1 % en 2050, autant dire rien). Le ThreeME complet raconte l'inverse : parce qu'il permet de remplacer l'énergie fossile par des équipements (isolation, pompes à chaleur, véhicules électriques), la taxe y déclenche des investissements qui réduisent fortement les émissions tout en soutenant l'activité, l'évaluation de la stratégie française conclut même à un PIB supérieur de 2,5 % en 2030 (Callonnec & Cancé, 2022). Notre exercice isole donc les canaux prix, compétitivité et transfert de la taxe, qui restent à l'œuvre dans le modèle complet.
+D'abord, l'absence de substitution énergétique : dans notre petit modèle, les émissions sont proportionnelles au PIB, on ne peut donc les réduire qu'en produisant moins (-0,1 % en 2050, autant dire rien). Le ThreeME complet raconte l'inverse : parce qu'il permet de remplacer l'énergie fossile par des équipements (isolation, pompes à chaleur, véhicules électriques), la taxe y déclenche des investissements qui réduisent fortement les émissions tout en soutenant l'activité, l'évaluation de la stratégie française conclut même à un PIB supérieur de 2,5 % en 2030 (Callonnec & Cancé, 2022). Notre exercice isole donc les canaux prix, compétitivité et transfert sociaux, qui restent à l'œuvre dans le modèle complet.
 
 Ensuite, le ménage unique : la maquette ne dit rien des inégalités, alors que c'est le cœur du débat sur la taxe carbone, qui pèse proportionnellement plus sur les budgets modestes. Le PNEC documente lui-même cette limite pour le ThreeME du STATEC (le modèle ne distingue pas les ménages par niveau de revenu, note 70, p. 430) : l'analyse distributive y est menée à part, sur données d'enquête. Distinguer plusieurs catégories de ménages dans le modèle serait un apport direct à la prochaine mise à jour.
 
@@ -261,7 +261,7 @@ Le calendrier donne son sens à l'exercice : la trajectoire de la taxe CO2 luxem
 
 ## Code et reproductibilité
 
-L'ensemble du code permettant de reproduire ces simulations est disponible dans un fork public du dépôt de l'équipe ThreeME : [github.com/Remi-Girard-fr/CGE_in_R](https://github.com/Remi-Girard-fr/CGE_in_R). Le README y détaille les apports par rapport au dépôt d'origine (bloc carbone, calibration, scénario de choc, configuration) et la procédure complète : cloner le dépôt, installer les packages R, lancer Main.R, puis rendre ce document. Les résultats de simulation utilisés ici sont fournis dans le dépôt, si bien que le rapport peut être régénéré sans relancer le modèle.
+L'ensemble du code permettant de reproduire ces simulations est disponible dans un fork public du dépôt de l'équipe ThreeME : [github.com/Remi-Girard-fr/CGE_in_R_co2](https://github.com/Remi-Girard-fr/CGE_in_R_co2). Le README y détaille les apports par rapport au dépôt d'origine (bloc carbone, calibration, scénario de choc, configuration) et la procédure complète : cloner le dépôt, installer les packages R, lancer Main.R, puis rendre ce document. Les résultats de simulation utilisés ici sont fournis dans le dépôt, si bien que le rapport peut être régénéré sans relancer le modèle.
 
 ## Références
 
