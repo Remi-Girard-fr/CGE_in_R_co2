@@ -37,7 +37,7 @@ Une taxe carbone de 1 % du PIB, recyclée à 50 % vers les ménages, creuse l'ac
 ## Références et crédits
 
 - Équipe ThreeME (OFCE, Ademe) : [dépôt d'origine](https://github.com/ThreeME-org/CGE_in_R), [documentation du modèle](https://www.threeme.org/documentation), solveur [tresthor](https://github.com/OFCE/tresthor).
-- Gouvernement du Grand-Duché de Luxembourg (2024), [PNEC, mise à jour 2024](https://energie.public.lu/fr/politique-energetique/plan-national-energie-climat.html).
+- Gouvernement du Grand-Duché de Luxembourg (2024), Plan national intégré en matière d’énergie et de climat du Luxembourg pour la période 2021-2030, mise à jour, juillet 2024
 - STATEC (2024), Modèles utilisés et scénarios simulés pour le PNEC, note du département Conjoncture, Modélisations et Prévisions, juillet 2024.
 - Callonnec G., Cancé R. (2022), Évaluation macroéconomique de la SNBC 2 avec le modèle ThreeME, Ademe-CGDD.
 
